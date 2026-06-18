@@ -1,56 +1,57 @@
-# Welcome to your Expo app 👋
+# Plugus 🔌
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> **YOUR LOCAL SERVICES, PLUGGED IN**
 
-## Get started
+Plugus is a robust, premium marketplace platform connecting local customers with reliable home service vendors (e.g., Electricians, Plumbers, Housecleaning, and Laundry). 
 
-1. Install dependencies
+The platform supports a sophisticated multi-role architecture, allowing Super Admins to manage the overall platform, City Admins to moderate local vendors, Vendors to manage their service catalogs, and Customers to easily book services and leave reviews.
 
-   ```bash
-   npm install
-   ```
+## 🚀 Tech Stack
+- **Framework:** [Expo](https://expo.dev/) / React Native
+- **Routing:** Expo Router
+- **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL, Edge Functions, Row-Level Security)
+- **Animations:** React Native Reanimated
 
-2. Start the app
+## ✨ Key Features
+- **Multi-Role Authentication:** Securely log in as a Super Admin, City Admin, Vendor, or Customer.
+- **Customer App:** Browse verified local vendors by city and category, book services, track order statuses, and submit 5-star reviews or complaints.
+- **Vendor Dashboard:** Publish service catalogs, manage pricing, and seamlessly accept/reject incoming customer bookings.
+- **City Admin Dashboard:** Manage and approve/reject new vendor applications for a specific city.
+- **Super Admin Dashboard:** Global oversight and the ability to securely generate new City Admin accounts via rate-limit-bypassing Edge Functions.
 
-   ```bash
-   npx expo start
-   ```
+## 🛠️ Getting Started
 
-In the output, you'll find options to open the app in a
+### 1. Prerequisites
+- Node.js (v18+)
+- Supabase CLI (for backend deployment)
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### 2. Installation
+Clone the repository and install dependencies:
 ```bash
-npm run reset-project
+git clone https://github.com/vaishnavinfosis-creator/final.git
+cd final
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 3. Environment Variables
+Create a `.env` file in the root directory and add your Supabase credentials. **(Never commit this file)**
+```env
+EXPO_PUBLIC_SUPABASE_URL=your-supabase-url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
 
-### Other setup steps
+### 4. Database Setup
+The database schema and policies are provided in the `/supabase` folder. 
+1. Link your Supabase project: `npx supabase link --project-ref your-project-id`
+2. Push the schema: `npx supabase db push` (or manually run `schema.sql` and `seed.sql` in your Supabase SQL editor).
+3. Deploy Edge Functions: `npx supabase functions deploy create-admin`
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### 5. Run the App
+Start the Expo development server:
+```bash
+npx expo start -c
+```
+Press `a` to open in Android emulator, or `i` to open in iOS simulator.
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+---
+*Built with ❤️ for connecting local communities to reliable services.*
