@@ -1,98 +1,168 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { useEffect } from 'react';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withRepeat, 
+  withTiming, 
+  withSequence,
+  Easing 
+} from 'react-native-reanimated';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
+export default function SplashScreen() {
+  const router = useRouter();
+
+  // Animation values
+  const logoScale = useSharedValue(0.3);
+  const logoOpacity = useSharedValue(0);
+  const glowOpacity = useSharedValue(0.3);
+  const textTranslateY = useSharedValue(20);
+  const textOpacity = useSharedValue(0);
+
+  useEffect(() => {
+    // Logo entrance animation
+    logoScale.value = withTiming(1.0, {
+      duration: 1000,
+      easing: Easing.out(Easing.back(1.5)),
+    });
+    logoOpacity.value = withTiming(1.0, { duration: 800 });
+
+    // Glow pulse animation
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.8, { duration: 1200, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.3, { duration: 1200, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1, // infinite
+      true
     );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+
+    // Text slide up
+    textTranslateY.value = withTiming(0, {
+      duration: 800,
+      easing: Easing.out(Easing.ease),
+    });
+    textOpacity.value = withTiming(1, { duration: 1000 });
+
+    // Redirect to login screen after 3.2 seconds
+    const timer = setTimeout(() => {
+      router.replace('/login');
+    }, 3200);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: logoScale.value }],
+    opacity: logoOpacity.value,
+  }));
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+    transform: [{ scale: 1.1 + glowOpacity.value * 0.15 }],
+  }));
+
+  const textStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: textTranslateY.value }],
+    opacity: textOpacity.value,
+  }));
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
-
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+    <View style={styles.container}>
+      <View style={styles.content}>
+        {/* Animated Glow Behind Logo */}
+        <Animated.View style={[styles.logoGlowContainer, glowStyle]}>
+          <Image
+            source={require('@/assets/images/logo-glow.png')}
+            style={styles.logoGlow}
+            contentFit="cover"
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
+        </Animated.View>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        {/* Animated Logo */}
+        <Animated.View style={[styles.logoContainer, logoStyle]}>
+          <Image
+            source={require('@/assets/images/plugus-logo.jpg')}
+            style={styles.logo}
+            contentFit="contain"
+          />
+        </Animated.View>
+
+        {/* Brand Text */}
+        <Animated.View style={[styles.brandContainer, textStyle]}>
+          <ThemedText style={styles.subtitle}>YOUR LOCAL SERVICES, PLUGGED IN</ThemedText>
+        </Animated.View>
+
+        {/* Spinner */}
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="small" color="#9C3FEF" />
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
+    backgroundColor: '#0B0C10', // Dark premium background
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  },
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoContainer: {
+    width: 250,
+    height: 250,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#9C3FEF',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 15,
+    elevation: 8,
+  },
+  logo: {
+    width: 220,
+    height: 220,
+  },
+  logoGlowContainer: {
+    position: 'absolute',
+    width: 200,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoGlow: {
+    width: 200,
+    height: 200,
+  },
+  brandContainer: {
+    alignItems: 'center',
+    marginTop: Spacing.five,
   },
   title: {
-    textAlign: 'center',
+    fontSize: 44,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 2,
   },
-  code: {
-    textTransform: 'uppercase',
+  subtitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#B0B4BA',
+    letterSpacing: 2,
+    marginTop: Spacing.two,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  loadingContainer: {
+    marginTop: Spacing.six,
+    height: 40,
+    justifyContent: 'center',
   },
 });
