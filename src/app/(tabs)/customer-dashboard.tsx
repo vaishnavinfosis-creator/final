@@ -91,6 +91,7 @@ export default function CustomerDashboard() {
   const [bookingPhone, setBookingPhone] = useState('');
   const [bookingAddress, setBookingAddress] = useState(profile?.address || '');
   const [placingBooking, setPlacingBooking] = useState(false);
+  const [completingBookingId, setCompletingBookingId] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingPhoneFocused, setBookingPhoneFocused] = useState(false);
   const [bookingAddressFocused, setBookingAddressFocused] = useState(false);
@@ -363,6 +364,37 @@ export default function CustomerDashboard() {
     } finally {
       setPlacingBooking(false);
     }
+  };
+
+  const handleCompleteService = async (bookingId: string) => {
+    Alert.alert(
+      'Complete Service',
+      'Are you sure you want to mark this service as completed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Confirm',
+          onPress: async () => {
+            setCompletingBookingId(bookingId);
+            try {
+              const { error } = await supabase
+                .from('bookings')
+                .update({ status: 'completed' })
+                .eq('id', bookingId)
+                .eq('customer_id', user?.id);
+              if (error) throw error;
+              
+              Alert.alert('Success', 'Service marked as completed!');
+              fetchCustomerBookings();
+            } catch (err: any) {
+              Alert.alert('Error', err.message || 'Failed to complete service');
+            } finally {
+              setCompletingBookingId(null);
+            }
+          }
+        }
+      ]
+    );
   };
 
   useEffect(() => {
@@ -966,6 +998,22 @@ export default function CustomerDashboard() {
                     <ThemedText style={styles.orderDetailText}>💰 Price: ₹{b.vendor_services?.price || '0.00'}</ThemedText>
                     <ThemedText style={styles.orderDetailText}>📍 Address: {b.customer_address}</ThemedText>
                   </View>
+
+                  {b.status === 'accepted' && (
+                    <View style={{ marginTop: Spacing.two }}>
+                      <Pressable
+                        style={[styles.bookServiceBtn, { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 10, backgroundColor: '#39FF14' }]}
+                        onPress={() => handleCompleteService(b.id)}
+                        disabled={completingBookingId === b.id}
+                      >
+                        {completingBookingId === b.id ? (
+                          <ActivityIndicator size="small" color="#050608" />
+                        ) : (
+                          <ThemedText style={[styles.bookServiceText, { fontSize: 13 }]}>Service Completed</ThemedText>
+                        )}
+                      </Pressable>
+                    </View>
+                  )}
                 </View>
               );
             })}

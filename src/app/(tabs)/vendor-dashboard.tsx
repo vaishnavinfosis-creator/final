@@ -7,8 +7,12 @@ import {
   Switch, 
   ActivityIndicator, 
   TextInput, 
-  Alert 
+  Alert,
+  RefreshControl
 } from 'react-native';
+import Animated, { FadeInUp, FadeInDown, FadeInRight, FadeInLeft, Layout } from 'react-native-reanimated';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/auth-context';
 import { supabase } from '@/config/supabase';
@@ -49,6 +53,14 @@ export default function VendorDashboard() {
   const [reviews, setReviews] = useState<any[]>([]);
   const [averageRating, setAverageRating] = useState<number>(0);
   const [loadingReviews, setLoadingReviews] = useState(false);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchServices(), fetchBookings(), fetchReviews()]);
+    setRefreshing(false);
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -301,6 +313,28 @@ export default function VendorDashboard() {
     fetchServices();
     fetchBookings();
     fetchReviews();
+
+    if (!user) return;
+
+    const subscription = supabase
+      .channel('bookings_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+          filter: `vendor_id=eq.${user.id}`,
+        },
+        () => {
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
   }, [user]);
 
   const pendingRequests = bookings.filter(b => b.status === 'pending');
@@ -335,8 +369,15 @@ export default function VendorDashboard() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      {/* Header Panel */}
+    <LinearGradient colors={['#050B14', '#0A192F', '#050B14']} style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.content} 
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00E5FF" />
+        }
+      >
+        {/* Header Panel */}
       <View style={styles.header}>
         <View>
           <ThemedText style={styles.greeting}>Vendor Portal</ThemedText>
@@ -372,7 +413,12 @@ export default function VendorDashboard() {
       <ThemedText style={styles.sectionTitle}>Overview</ThemedText>
       <View style={styles.metricsContainer}>
         {metrics.map((met, idx) => (
-          <View key={idx} style={styles.metricCard}>
+          <Animated.View 
+            key={idx} 
+            style={styles.metricCard}
+            entering={FadeInDown.delay(idx * 100).springify()}
+            layout={Layout.springify()}
+          >
             <ThemedText style={styles.metricLabel}>{met.label}</ThemedText>
             <View style={styles.metricValueRow}>
               <ThemedText style={styles.metricValue}>{met.value}</ThemedText>
@@ -382,7 +428,7 @@ export default function VendorDashboard() {
                 </ThemedText>
               </View>
             </View>
-          </View>
+          </Animated.View>
         ))}
       </View>
 
@@ -437,8 +483,13 @@ export default function VendorDashboard() {
         </View>
       ) : (
         <View style={{ gap: Spacing.three }}>
-          {pendingRequests.map((b) => (
-            <View key={b.id} style={styles.bookingCard}>
+          {pendingRequests.map((b, idx) => (
+            <Animated.View 
+              key={b.id} 
+              style={styles.bookingCard}
+              entering={FadeInRight.delay(idx * 150).springify()}
+              layout={Layout.springify()}
+            >
               <View style={styles.bookingHeader}>
                 <ThemedText style={styles.bookingServiceTitle}>
                   🛠️ {b.vendor_services?.name || 'Service'}
@@ -460,19 +511,19 @@ export default function VendorDashboard() {
               </View>
               <View style={styles.bookingActionRow}>
                 <Pressable 
-                  style={[styles.actionBtn, styles.declineBtn]}
+                  style={({pressed}) => [styles.actionBtn, styles.declineBtn, pressed && {opacity: 0.7}]}
                   onPress={() => handleRejectBooking(b.id)}
                 >
                   <ThemedText style={styles.declineText}>Decline</ThemedText>
                 </Pressable>
                 <Pressable 
-                  style={[styles.actionBtn, styles.acceptBtn]}
+                  style={({pressed}) => [styles.actionBtn, styles.acceptBtn, pressed && {opacity: 0.7}]}
                   onPress={() => handleAcceptBooking(b.id)}
                 >
                   <ThemedText style={styles.acceptText}>Accept</ThemedText>
                 </Pressable>
               </View>
-            </View>
+            </Animated.View>
           ))}
         </View>
       )}
@@ -485,8 +536,13 @@ export default function VendorDashboard() {
         </View>
       ) : (
         <View style={{ gap: Spacing.three }}>
-          {activeRequests.map((b) => (
-            <View key={b.id} style={styles.bookingCard}>
+          {activeRequests.map((b, idx) => (
+            <Animated.View 
+              key={b.id} 
+              style={styles.bookingCard}
+              entering={FadeInRight.delay(idx * 150).springify()}
+              layout={Layout.springify()}
+            >
               <View style={styles.bookingHeader}>
                 <ThemedText style={styles.bookingServiceTitle}>
                   ⚡ {b.vendor_services?.name || 'Service'}
@@ -507,12 +563,12 @@ export default function VendorDashboard() {
                 </ThemedText>
               </View>
               <Pressable 
-                style={styles.completeJobBtn}
+                style={({pressed}) => [styles.completeJobBtn, pressed && {opacity: 0.7}]}
                 onPress={() => handleCompleteBooking(b.id)}
               >
                 <ThemedText style={styles.completeJobText}>Mark as Completed</ThemedText>
               </Pressable>
-            </View>
+            </Animated.View>
           ))}
         </View>
       )}
@@ -530,7 +586,11 @@ export default function VendorDashboard() {
           {pastJobs.map((b) => {
             const statusColor = b.status === 'completed' ? '#39FF14' : '#FF3333';
             return (
-              <View key={b.id} style={styles.bookingCard}>
+              <Animated.View 
+                key={b.id} 
+                style={styles.bookingCard}
+                entering={FadeInLeft.delay(100).springify()}
+              >
                 <View style={styles.bookingHeader}>
                   <ThemedText style={styles.bookingServiceTitle}>
                     {b.status === 'completed' ? '✅' : '❌'} {b.vendor_services?.name || 'Service'}
@@ -562,7 +622,7 @@ export default function VendorDashboard() {
                     💰 Earnings: <ThemedText style={styles.boldText}>₹{b.vendor_services?.price || '0.00'}</ThemedText>
                   </ThemedText>
                 </View>
-              </View>
+              </Animated.View>
             );
           })}
         </View>
@@ -697,14 +757,14 @@ export default function VendorDashboard() {
           ))}
         </View>
       )}
-    </ScrollView>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050608',
   },
   content: {
     paddingHorizontal: Spacing.four,
@@ -783,27 +843,35 @@ const styles = StyleSheet.create({
   },
   metricsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   metricCard: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.01)',
+    width: '47%',
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     padding: Spacing.three,
     gap: Spacing.one,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   metricLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: '#B0B4BA',
   },
   metricValueRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 2,
+    alignItems: 'baseline',
+    marginTop: 4,
+    flexWrap: 'wrap',
+    gap: 4,
   },
   metricValue: {
     fontSize: 20,

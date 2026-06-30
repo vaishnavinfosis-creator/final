@@ -8,6 +8,7 @@
     "scheme": "plugus",
     "userInterfaceStyle": "automatic",
     "android": {
+      "package": "com.plugus.app",
       "adaptiveIcon": {
         "backgroundColor": "#000000",
         "foregroundImage": "./assets/images/plugus-logo.jpg",

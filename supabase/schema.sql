@@ -121,7 +121,7 @@ create policy "Allow update vendor applications status" on public.vendor_applica
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, role, name, location_id)
+  insert into public.profiles (id, email, role, name, location_id, phone)
   values (
     new.id,
     new.email,
@@ -130,7 +130,8 @@ begin
       else coalesce(new.raw_user_meta_data->>'role', 'customer')
     end,
     coalesce(new.raw_user_meta_data->>'name', ''),
-    NULLIF(new.raw_user_meta_data->>'location_id', '')::uuid
+    NULLIF(new.raw_user_meta_data->>'location_id', '')::uuid,
+    new.raw_user_meta_data->>'phone'
   );
   return new;
 end;
@@ -186,6 +187,9 @@ on conflict (name) do nothing;
 
 -- Add address column to profiles table if it doesn't exist
 alter table public.profiles add column if not exists address text;
+
+-- Add phone column to profiles table if it doesn't exist
+alter table public.profiles add column if not exists phone text;
 
 -- Add is_visible column to profiles if it doesn't exist
 alter table public.profiles add column if not exists is_visible boolean default true;

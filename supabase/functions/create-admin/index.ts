@@ -10,7 +10,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { email, password, location_id } = await req.json()
+    const { email, password, location_id, phone } = await req.json()
     const authHeader = req.headers.get('Authorization')
     
     if (!authHeader) {
@@ -45,10 +45,15 @@ serve(async (req) => {
     )
 
     const { data: newAdminData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email, password, email_confirm: true, user_metadata: { role: 'admin', location_id, name: 'Admin Staff' }
+      email, password, email_confirm: true, user_metadata: { role: 'admin', location_id, name: 'Admin Staff', phone }
     })
 
     if (createError) throw createError
+
+    if (phone) {
+      // Attempt to update phone in profiles, ignoring error if column doesn't exist
+      await supabaseAdmin.from('profiles').update({ phone }).eq('id', newAdminData.user.id)
+    }
 
     return new Response(JSON.stringify({ user: newAdminData.user }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 })
   } catch (error: any) {

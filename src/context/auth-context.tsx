@@ -12,6 +12,7 @@ export interface Profile {
   created_at?: string;
   location_id?: string | null;
   address?: string | null;
+  phone?: string | null;
   is_visible?: boolean;
   is_blocked?: boolean;
 }

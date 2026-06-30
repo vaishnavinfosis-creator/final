@@ -27,6 +27,7 @@ interface CategoryItem {
 type AdminProfile = Profile & {
   locations?: { name: string } | null;
   location_id?: string | null;
+  phone?: string | null;
 };
 
 export default function SuperAdminDashboard() {
@@ -45,6 +46,7 @@ export default function SuperAdminDashboard() {
   // Input states
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [adminPhone, setAdminPhone] = useState('');
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [newLocationName, setNewLocationName] = useState('');
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -57,6 +59,7 @@ export default function SuperAdminDashboard() {
   // Focus states
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
   const [locFocused, setLocFocused] = useState(false);
   const [catFocused, setCatFocused] = useState(false);
 
@@ -191,7 +194,8 @@ export default function SuperAdminDashboard() {
         body: {
           email: adminEmail.trim(),
           password: adminPassword,
-          location_id: selectedLocationId
+          location_id: selectedLocationId,
+          phone: adminPhone.trim()
         }
       });
 
@@ -201,6 +205,7 @@ export default function SuperAdminDashboard() {
       Alert.alert('Success', 'Admin account registered successfully!');
       setAdminEmail('');
       setAdminPassword('');
+      setAdminPhone('');
       setSelectedLocationId(null);
       fetchAdmins();
     } catch (err: any) {
@@ -277,6 +282,20 @@ export default function SuperAdminDashboard() {
             onChangeText={setAdminEmail}
             onFocus={() => setEmailFocused(true)}
             onBlur={() => setEmailFocused(false)}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <ThemedText style={styles.inputLabel}>Admin Phone (Optional)</ThemedText>
+          <TextInput
+            style={[styles.input, phoneFocused && styles.inputActive]}
+            placeholder="+1 234 567 8900"
+            placeholderTextColor="rgba(255, 255, 255, 0.3)"
+            keyboardType="phone-pad"
+            value={adminPhone}
+            onChangeText={setAdminPhone}
+            onFocus={() => setPhoneFocused(true)}
+            onBlur={() => setPhoneFocused(false)}
           />
         </View>
 
@@ -418,6 +437,7 @@ export default function SuperAdminDashboard() {
                 <ThemedText style={styles.adminEmail}>{adm.email}</ThemedText>
                 <ThemedText style={styles.adminRole}>
                   Location: {adm.locations?.name ? `📍 ${adm.locations.name}` : '⚠️ Unassigned'}
+                  {adm.phone ? ` • 📞 ${adm.phone}` : ''}
                 </ThemedText>
               </View>
               <Pressable 
